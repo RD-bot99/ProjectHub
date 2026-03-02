@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/context/ProjectsContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface StatCardProps {
   label: string;
@@ -40,6 +41,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon, color }) => {
 
 export const DashboardContent: React.FC = () => {
   const router = useRouter();
+  const { user, role } = useAuth();
   const { projects, addTaskToGlobal } = useProjects();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
@@ -48,6 +50,11 @@ export const DashboardContent: React.FC = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [newInviteEmail, setNewInviteEmail] = useState('');
+
+  // Role-based access control
+  const canCreateProject = role === 'admin' || role === 'manager';
+  const canInviteMembers = role === 'admin' || role === 'manager';
+  const canCreateTask = role !== 'member' || true; // Members can create their own tasks
 
   const handleCreateProject = () => {
     if (newProjectName.trim()) {
@@ -178,24 +185,35 @@ export const DashboardContent: React.FC = () => {
           <h3 className="text-lg font-semibold text-foreground mb-6">Quick Actions</h3>
 
           <div className="space-y-3">
-            <Button className="w-full justify-start" variant="outline" onClick={() => setShowNewProjectModal(true)}>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create New Project
-            </Button>
-            <Button className="w-full justify-start" variant="outline" onClick={() => setShowNewTaskModal(true)}>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add New Task
-            </Button>
-            <Button className="w-full justify-start" variant="outline" onClick={() => setShowInviteModal(true)}>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20H1v-2a3 3 0 015.856-1.487M13 16a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Invite Team Members
-            </Button>
+            {canCreateProject && (
+              <Button className="w-full justify-start" variant="outline" onClick={() => setShowNewProjectModal(true)}>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Project
+              </Button>
+            )}
+            {canCreateTask && (
+              <Button className="w-full justify-start" variant="outline" onClick={() => setShowNewTaskModal(true)}>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add New Task
+              </Button>
+            )}
+            {canInviteMembers && (
+              <Button className="w-full justify-start" variant="outline" onClick={() => setShowInviteModal(true)}>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20H1v-2a3 3 0 015.856-1.487M13 16a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Invite Team Members
+              </Button>
+            )}
+            {!canCreateProject && !canInviteMembers && (
+              <div className="p-3 bg-muted/50 rounded-lg text-center text-sm text-muted-foreground">
+                Your role ({role}) has limited permissions. Contact an admin for more actions.
+              </div>
+            )}
           </div>
 
           <div className="mt-6 p-4 bg-accent/10 rounded-lg border border-accent/20">

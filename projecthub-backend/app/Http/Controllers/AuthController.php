@@ -59,12 +59,33 @@ class AuthController extends Controller
 
     public function me()
     {
-        return response()->json(auth()->user());
+        $user = auth()->user()->load('roles');
+        return response()->json($user);
     }
 
     public function refresh()
     {
         $token = JWTAuth::refresh();
         return response()->json(['token' => $token]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect'], 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['new_password']),
+        ]);
+
+        return response()->json(['message' => 'Password updated successfully']);
     }
 }

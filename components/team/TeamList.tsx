@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 
 interface TeamMember {
   id: string;
@@ -14,7 +15,9 @@ interface TeamMember {
 }
 
 export const TeamList: React.FC = () => {
+  const { role } = useAuth();
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const canManageTeam = role === 'admin' || role === 'manager';
   const [members, setMembers] = useState<TeamMember[]>([
     {
       id: '1',
@@ -87,12 +90,18 @@ export const TeamList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Team Members</h2>
-        <Button onClick={() => setShowInviteModal(true)}>
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Invite Member
-        </Button>
+        {canManageTeam ? (
+          <Button onClick={() => setShowInviteModal(true)}>
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Invite Member
+          </Button>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Only managers and admins can manage team members
+          </div>
+        )}
       </div>
 
       {/* Team Members Table */}
@@ -139,9 +148,11 @@ export const TeamList: React.FC = () => {
                     {new Date(member.joinDate).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-primary hover:underline text-sm font-medium">
-                      Edit
-                    </button>
+                    {canManageTeam && (
+                      <button className="text-primary hover:underline text-sm font-medium">
+                        Edit
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -5,13 +5,17 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useProjects } from '@/context/ProjectsContext';
+import { useAuth } from '@/context/AuthContext';
 import type { Project } from '@/context/ProjectsContext';
 
 export const ProjectsList: React.FC = () => {
+  const { role } = useAuth();
   const { projects, addProject } = useProjects();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
+
+  const canCreateProject = role === 'admin' || role === 'manager';
 
   const handleCreateProject = () => {
     if (newProjectName.trim()) {
@@ -49,12 +53,18 @@ export const ProjectsList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Projects</h2>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Project
-        </Button>
+        {canCreateProject ? (
+          <Button onClick={() => setShowCreateModal(true)}>
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Project
+          </Button>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Only managers and admins can create projects
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

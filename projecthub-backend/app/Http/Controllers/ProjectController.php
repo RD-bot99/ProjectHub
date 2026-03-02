@@ -72,4 +72,81 @@ class ProjectController extends Controller
         $project->delete();
         return response()->json(['message' => 'Project deleted']);
     }
+
+    public function getMembers(Project $project)
+    {
+        return response()->json($project->members()->with('user')->get());
+    }
+
+    public function addMember(Request $request, Project $project)
+    {
+        $this->authorize('update', $project);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|in:admin,manager,member',
+        ]);
+
+        $existingMember = $project->members()->where('user_id', $validated['user_id'])->first();
+        
+        if ($existingMember) {
+            return response()->json(['message' => 'User is already a member'], 400);
+        }
+
+        $member = ProjectMember::create([
+            'project_id' => $project->id,
+            'user_id' => $validated['user_id'],
+            'role' => $validated['role'],
+        ]);
+
+        ActivityLog::create([
+            'project_id' => $project->id,
+            'user_id' => auth()->id(),
+            'action' => 'added_member',
+            'entity_type' => 'member',
+            'entity_id' => $member->id,
+        ]);
+
+        return response()->json($member->load('user'), 201);
+    }
+
+    public function updateMemberRole(Request $request, Project $project, $userId)
+    {
+        $this->authorize('update', $project);
+
+        $validated = $request->validate([
+            'role' => 'required|in:admin,manager,member',
+        ]);
+
+        $member = $project->members()->where('user_id', $userId)->firstOrFail();
+        $member->update($validated);
+
+        ActivityLog::create([
+            'project_id' => $project->id,
+            'user_id' => auth()->id(),
+            'action' => 'updated_member_role',
+            'entity_type' => 'member',
+            'entity_id' => $member->id,
+        ]);
+
+        return response()->json($member->load('user'));
+    }
+
+    public function removeMember(Project $project, $userId)
+    {
+        $this->authorize('update', $project);
+
+        $member = $project->members()->where('user_id', $userId)->firstOrFail();
+        $member->delete();
+
+        ActivityLog::create([
+            'project_id' => $project->id,
+            'user_id' => auth()->id(),
+            'action' => 'removed_member',
+            'entity_type' => 'member',
+            'entity_id' => $member->id,
+        ]);
+
+        return response()->json(['message' => 'Member removed']);
+    }
 }
