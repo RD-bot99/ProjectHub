@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/context/ProjectsContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface StatCardProps {
   label: string;
@@ -40,7 +41,8 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon, color }) => {
 
 export const DashboardContent: React.FC = () => {
   const router = useRouter();
-  const { projects, addTaskToGlobal } = useProjects();
+  const { user, hasRole } = useAuth();
+  const { projects, globalTasks, addTaskToGlobal } = useProjects();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -48,6 +50,38 @@ export const DashboardContent: React.FC = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [newInviteEmail, setNewInviteEmail] = useState('');
+
+  // Calculate stats based on role
+  const getStats = () => {
+    const isAdmin = hasRole('admin');
+    const isManager = hasRole('manager');
+    const isMember = hasRole('team_member');
+
+    if (isAdmin) {
+      return {
+        activeProjects: projects.filter(p => p.status === 'active').length,
+        tasksToday: globalTasks.filter(t => t.status !== 'completed').length,
+        teamMembers: projects.reduce((acc, p) => acc + (p.members || 0), 0),
+        completionRate: `${Math.round((globalTasks.filter(t => t.status === 'completed').length / globalTasks.length) * 100)}%`,
+      };
+    } else if (isManager) {
+      return {
+        activeProjects: projects.filter(p => p.status === 'active').length,
+        tasksToday: globalTasks.filter(t => t.status !== 'completed' && (t.assigned_to === user?.id || t.assignedTo === user?.id)).length,
+        teamMembers: projects.reduce((acc, p) => acc + (p.members || 0), 0),
+        completionRate: `${Math.round((globalTasks.filter(t => t.status === 'completed').length / globalTasks.length) * 100)}%`,
+      };
+    } else {
+      return {
+        activeProjects: projects.filter(p => p.status === 'active').length,
+        tasksToday: globalTasks.filter(t => t.status !== 'completed' && (t.assigned_to === user?.id || t.assignedTo === user?.id)).length,
+        teamMembers: 0,
+        completionRate: `${Math.round((globalTasks.filter(t => t.status === 'completed' && (t.assigned_to === user?.id || t.assignedTo === user?.id)).length / (globalTasks.filter(t => t.assigned_to === user?.id || t.assignedTo === user?.id).length || 1)) * 100)}%`,
+      };
+    }
+  };
+
+  const stats = getStats();
 
   const handleCreateProject = () => {
     if (newProjectName.trim()) {
@@ -67,7 +101,6 @@ export const DashboardContent: React.FC = () => {
         priority: newTaskPriority,
         assignedTo: 'You',
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        projectName: 'Unassigned',
       });
       setShowNewTaskModal(false);
       setNewTaskTitle('');
@@ -81,14 +114,6 @@ export const DashboardContent: React.FC = () => {
       setShowInviteModal(false);
       setNewInviteEmail('');
     }
-  };
-
-  // Mock data - will be replaced with API calls
-  const stats = {
-    activeProjects: 3,
-    tasksToday: 8,
-    teamMembers: 12,
-    completionRate: '75%',
   };
 
   return (

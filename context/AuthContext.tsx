@@ -52,56 +52,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${API_URL}/api/auth/login`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      // const data = await response.json();
+      const { apiClient } = await import('@/lib/api-client');
+      const response = await apiClient.login(email, password);
       
-      // Mock response for development
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        roles: ['team_member'],
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        avatar_url: response.user.avatar_url,
+        roles: response.roles || [],
       };
-      const mockToken = 'mock-jwt-token-' + Date.now();
       
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      setUser(user);
+      setToken(response.token);
+      localStorage.setItem('auth_token', response.token);
+      localStorage.setItem('auth_user', JSON.stringify(user));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, passwordConfirmation: string = password) => {
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${API_URL}/api/auth/register`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password, name }),
-      // });
-      // const data = await response.json();
+      const { apiClient } = await import('@/lib/api-client');
+      const response = await apiClient.register(name, email, password, passwordConfirmation);
       
-      // Mock response for development
-      const mockUser: User = {
-        id: '1',
-        email,
-        name,
-        roles: ['team_member'],
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        avatar_url: response.user.avatar_url,
+        roles: response.roles || [],
       };
-      const mockToken = 'mock-jwt-token-' + Date.now();
       
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      setUser(user);
+      setToken(response.token);
+      localStorage.setItem('auth_token', response.token);
+      localStorage.setItem('auth_user', JSON.stringify(user));
     } finally {
       setIsLoading(false);
     }

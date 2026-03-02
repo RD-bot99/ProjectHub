@@ -27,10 +27,12 @@ class AuthController extends Controller
         $user->roles()->attach(3); // Assuming role_id 3 is 'team_member'
 
         $token = JWTAuth::fromUser($user);
+        $roles = $user->roles()->pluck('name')->toArray();
 
         return response()->json([
             'user' => $user,
             'token' => $token,
+            'roles' => $roles,
         ], 201);
     }
 
@@ -45,9 +47,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
+        $user = JWTAuth::user();
+        $roles = $user->roles()->pluck('name')->toArray();
+
         return response()->json([
             'token' => $token,
-            'user' => JWTAuth::user(),
+            'user' => $user,
+            'roles' => $roles,
         ]);
     }
 
@@ -59,7 +65,13 @@ class AuthController extends Controller
 
     public function me()
     {
-        return response()->json(auth()->user());
+        $user = auth()->user();
+        $roles = $user->roles()->pluck('name')->toArray();
+        
+        return response()->json([
+            'user' => $user,
+            'roles' => $roles,
+        ]);
     }
 
     public function refresh()
